@@ -300,7 +300,7 @@ function markdownToDraft(string, options = {}) {
         }
         blocks.push(block);
       }
-    } else if (itemType === 'hardbreak') {
+    } else if (itemType === 'hardbreak' || itemType === 'softbreak') {
       blocks.push(DefaultBlockTypes.paragraph_open());
     }
 

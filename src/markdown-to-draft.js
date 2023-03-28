@@ -130,9 +130,9 @@ function parseInline(inlineItem, BlockEntities, BlockStyles) {
     if (child.type === 'text') {
       content += child.content;
     } else if (child.type === 'softbreak') {
-      content += '\n\n';
+      content += '\n';
     } else if (child.type === 'hardbreak') {
-      content += '\n\n';
+      content += '\n';
     } else if (BlockStyles[child.type]) {
       var key = generateUniqueKey();
       var styleBlock = {
@@ -173,7 +173,21 @@ function parseInline(inlineItem, BlockEntities, BlockStyles) {
     }
   });
 
-  return {content, blockEntities, blockEntityRanges, blockInlineStyleRanges};
+  return { content, blockEntities, blockEntityRanges, blockInlineStyleRanges };
+}
+
+function batchProcessInlineItems(queue, blocks, entityMap, BlockEntities, BlockStyles,) {
+  // Parse inline content and apply it to the most recently created block level item,
+  // which is where the inline content will belong.
+  const { content, blockEntities, blockEntityRanges, blockInlineStyleRanges } = parseInline({ children: queue }, BlockEntities, BlockStyles)
+
+  const blockToModify = blocks[blocks.length - 1]
+  blockToModify.text = content
+  blockToModify.inlineStyleRanges = blockInlineStyleRanges
+  blockToModify.entityRanges = blockEntityRanges
+
+  // The entity map is a master object separate from the block so just add any entities created for this block to the master object
+  Object.assign(entityMap, blockEntities)
 }
 
 /**
@@ -246,16 +260,24 @@ function markdownToDraft(string, options = {}) {
     }
 
     if (itemType === 'inline') {
-      // Parse inline content and apply it to the most recently created block level item,
-      // which is where the inline content will belong.
-      var {content, blockEntities, blockEntityRanges, blockInlineStyleRanges} = parseInline(item, BlockEntities, BlockStyles);
-      var blockToModify = blocks[blocks.length - 1];
-      blockToModify.text = content;
-      blockToModify.inlineStyleRanges = blockInlineStyleRanges;
-      blockToModify.entityRanges = blockEntityRanges;
-
-      // The entity map is a master object separate from the block so just add any entities created for this block to the master object
-      Object.assign(entityMap, blockEntities);
+      // Processing all inline children in queue
+      let queue = []
+      for (let i = 0; i < item.children.length; i += 1) {
+        // Create new block when encountering a softbreak or hardbreak
+        if (['softbreak', 'hardbreak'].includes(item.children[i].type)) {
+          if (queue.length > 0) {
+            batchProcessInlineItems(queue, blocks, entityMap, BlockEntities, BlockStyles)
+            // Reset queue
+            queue = []
+          }
+          blocks.push(DefaultBlockTypes.paragraph_open())
+        } else {
+          queue.push(item.children[i])
+        }
+      }
+      if (queue.length > 0) {
+        batchProcessInlineItems(queue, blocks, entityMap, BlockEntities, BlockStyles)
+      }
     } else if ((itemType.indexOf('_open') !== -1 || itemType === 'fence' || itemType === 'hr' || itemType === 'htmlblock') && BlockTypes[itemType]) {
       var depth = 0;
       var block;
@@ -300,7 +322,7 @@ function markdownToDraft(string, options = {}) {
         }
         blocks.push(block);
       }
-    } else if (itemType === 'hardbreak' || itemType === 'softbreak') {
+    } else if (itemType === 'hardbreak') {
       blocks.push(DefaultBlockTypes.paragraph_open());
     }
 

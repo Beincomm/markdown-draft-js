@@ -1,8 +1,8 @@
 {
-  "name": "@beincomm/markdown-draft-js",
+  "name": "@beincom/markdown-draft-js",
   "description": "Convert draftjs blocks to markdown using the marked library, and vice versa.",
   "author": "Rose Robertson",
-  "version": "2.4.2",
+  "version": "2.4.5",
   "license": "MIT",
   "repository": {
     "type": "git",

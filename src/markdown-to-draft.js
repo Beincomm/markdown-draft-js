@@ -159,7 +159,7 @@ function parseInline(inlineItem, BlockEntities, BlockStyles) {
         length: 0,
         key: key
       });
-    } else if (child.type.indexOf('_close') !== -1 && BlockEntities[child.type.replace('_close', '_open')]) {
+    } else if (child.type.indexOf('_close') !== -1 && BlockEntities[child.type.replace('_close', '_open')] && blockEntityRanges.length > 0) {
       blockEntityRanges[blockEntityRanges.length - 1].length = strlen(content) - blockEntityRanges[blockEntityRanges.length - 1].offset;
     } else if (child.type.indexOf('_close') !== -1 && BlockStyles[child.type.replace('_close', '_open')]) {
       var type = BlockStyles[child.type.replace('_close', '_open')]
